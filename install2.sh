@@ -19,6 +19,7 @@ if [ -n "$REF" ]; then
     cd $HOME/opt/dcdn/
     ./pop --signup-by-referral-route $REF
 fi
+cd $HOME
 
 sudo tee /etc/systemd/system/pop.service > /dev/null << EOF
 [Unit]
