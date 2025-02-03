@@ -46,6 +46,14 @@ port_check() {
         echo "Порт $PORT свободен. Продолжаем установку."
     fi
 }
+restore_backup(){
+    if [ -f "$HOME/pipe_backup/node_info.json" ]; then
+    cp "$HOME/pipe_backup/node_info.json" "$HOME/opt/dcdn/node_info.json"
+    echo "Backup of node_info.json restore."
+    else
+    echo "Backup not found."
+    fi
+}
 # Меню
 PS3='Select an action: '
 options=("Install" "Update" "Logs" "Сhange System Requirements" "Status" "AutoUpdate" "Ref" "Uninstall" "Exit")
@@ -73,6 +81,7 @@ select opt in "${options[@]}"; do
                 cd $HOME/opt/dcdn/
                 ./pop --signup-by-referral-route "$REF"
             fi
+            restore_backup
 
             sudo tee /etc/systemd/system/pop.service > /dev/null << EOF
 [Unit]
