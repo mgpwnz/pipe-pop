@@ -48,7 +48,7 @@ port_check() {
 }
 # Меню
 PS3='Select an action: '
-options=("Install" "Update" "Logs" "Status" "AutoUpdate" "Ref" "Uninstall" "Exit")
+options=("Install" "Update" "Logs" "Сhange System Requirements" "Status" "AutoUpdate" "Ref" "Uninstall" "Exit")
 
 select opt in "${options[@]}"; do
     case $opt in
