@@ -47,7 +47,15 @@ How It Works
 
 
 TXH VETALL!
+
 wget -q -O pipe.sh https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/pipe.sh && chmod +x pipe.sh && ./pipe.sh
 
-1) Install                     3) Logs                        5) Status                      7) Ref                         9) Exit
-2) Update                      4) Сhange System Requirements  6) AutoUpdate                  8) Uninstall
+1) Install                                                                                        
+2) Update                                        
+3) Logs   
+4) Сhange System Requirements
+5) Status
+6) AutoUpdate
+7) Ref
+8) Uninstall
+9) Exit
