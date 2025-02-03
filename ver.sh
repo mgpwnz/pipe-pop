@@ -44,4 +44,4 @@ get_latest_version() {
 }
 
 LATEST_VERSION=$(get_latest_version "https://dl.pipecdn.app" "pop" "v0.2.0")
-echo "LATEST_VERSION=$(echo "$LATEST_VERSION" | sed 's/^v//')"
+echo "$(echo "$LATEST_VERSION" | sed 's/^v//')"
