@@ -226,12 +226,15 @@ EOF
             ;;
         
         "Сhange System Requirements")
+            echo "Change System Requirements"
             echo "Enter RAM: "
             read NEW_RAM
             echo "Enter STORAGE: "
-            read STORAGE            
-            sudo sed -i 's/--ram=[^ ]*/--ram=$NEW_RAM/' /etc/systemd/system/pop.service
-            sudo sed -i 's/--max-disk [^ ]*/--max-disk $STORAGE/' /etc/systemd/system/pop.service
+            read STORAGE
+
+            sudo sed -i "s/--ram=[^ ]*/--ram=$NEW_RAM/" /etc/systemd/system/pop.service
+            sudo sed -i "s/--max-disk [^ ]*/--max-disk $STORAGE/" /etc/systemd/system/pop.service
+
             sudo systemctl daemon-reload
             sudo systemctl restart pop
             break
