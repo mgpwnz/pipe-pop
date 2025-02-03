@@ -1,31 +1,32 @@
-#!/bin/bash
+#!/bin/bash 
 while true
 do
-# Перевірка на наявність curl і wget
-command -v curl >/dev/null 2>&1 || { echo "curl не знайдено, будь ласка, встановіть curl."; exit 1; }
-command -v wget >/dev/null 2>&1 || { echo "wget не знайдено, будь ласка, встановіть wget."; exit 1; }
+# Check for the presence of curl and wget
+command -v curl >/dev/null 2>&1 || { echo "curl not found, please install curl."; exit 1; }
+command -v wget >/dev/null 2>&1 || { echo "wget not found, please install wget."; exit 1; }
 DISK=150
 RAM=8
 LATEST_VERSION=$(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh)
 
-# Функція для зупинки і відключення сервісу pop
+# Function to stop and disable the pop service
 stop_and_disable_pop() {
     sudo systemctl stop pop
     sudo systemctl disable pop
 }
+
 backup_node_info() {
     # Create the backup directory if it doesn't exist
     mkdir -p "$HOME/pipe_backup"
 
     # Check if node_info.json exists before copying
     if [ -f "$HOME/opt/dcdn/node_info.json" ]; then
-        # Copy the node_info.json file to the backup directory
         cp "$HOME/opt/dcdn/node_info.json" "$HOME/pipe_backup/node_info.json"
         echo "Backup of node_info.json completed."
     else
         echo "node_info.json not found, skipping backup."
     fi
 }
+
 delete_autoupdate(){
     if [ -f "$HOME/opt/dcdn/update_node.sh" ]; then
         rm $HOME/opt/dcdn/update_node.sh
@@ -34,29 +35,32 @@ delete_autoupdate(){
         sudo systemctl daemon-reload
         sudo systemctl disable node_update.timer
         sudo systemctl stop node_update.timer
-        echo "Автооновлення було видалене."
+        echo "Auto-update has been removed."
     fi
 }
+
 port_check() {
     local PORT=8003
     if sudo lsof -i :$PORT >/dev/null 2>&1; then
-        echo "Ошибка: Порт $PORT занят. Остановка установки."
+        echo "Error: Port $PORT is in use. Stopping installation."
         exit 1
     else
-        echo "Порт $PORT свободен. Продолжаем установку."
+        echo "Port $PORT is free. Continuing installation."
     fi
 }
+
 restore_backup(){
     if [ -f "$HOME/pipe_backup/node_info.json" ]; then
-    cp "$HOME/pipe_backup/node_info.json" "$HOME/opt/dcdn/node_info.json"
-    echo "Backup of node_info.json restore."
+        cp "$HOME/pipe_backup/node_info.json" "$HOME/opt/dcdn/node_info.json"
+        echo "Backup of node_info.json restored."
     else
-    echo "Backup not found."
+        echo "Backup not found."
     fi
 }
-# Меню
+
+# Menu
 PS3='Select an action: '
-options=("Install" "Update" "Logs" "Сhange System Requirements" "Status" "AutoUpdate" "Ref" "Uninstall" "Exit")
+options=("Install" "Update" "Logs" "Change System Requirements" "Status" "AutoUpdate" "Ref" "Uninstall" "Exit")
 
 select opt in "${options[@]}"; do
     case $opt in
@@ -66,13 +70,12 @@ select opt in "${options[@]}"; do
             sudo mkdir -p $HOME/opt/dcdn/download_cache
             sudo wget -O $HOME/opt/dcdn/pop "https://dl.pipecdn.app/$LATEST_VERSION/pop"
             sudo chmod +x $HOME/opt/dcdn/pop
-            
-            # Перевірка наявності символічного лінку
+
             if [ ! -L /usr/local/bin/pop ]; then
                 sudo ln -s $HOME/opt/dcdn/pop /usr/local/bin/pop
             fi
 
-            echo "Enter solana wallet: "
+            echo "Enter Solana wallet: "
             read PUB_KEY
             echo "Enter REF code (optional): "
             read REF
@@ -112,12 +115,11 @@ EOF
 
         "Update")
             cd $HOME
-            #back up  
             backup_node_info
 
             CURRENT_VERSION=$($HOME/opt/dcdn/pop --version 2>/dev/null)
             if [ "$CURRENT_VERSION" == "$LATEST_VERSION" ]; then
-                echo "Ви вже використовуєте останню версію: $CURRENT_VERSION"
+                echo "You are already using the latest version: $CURRENT_VERSION"
                 break
             fi
 
@@ -141,50 +143,55 @@ EOF
             ;;
 
         "AutoUpdate")
-            #back up        
+            #!/bin/bash
+            if [ -f "$HOME/opt/dcdn/update_node.sh" ]; then
+                echo "File $HOME/opt/dcdn/update_node.sh exists. Interrupting script execution."
+                exit 1
+            fi
+
             backup_node_info
-        
-            # Створюємо скрипт для оновлення
-            echo "Створення скрипту оновлення..."
+
+            # Creating update script
+            echo "Creating update script..."
     cat << EOF > $HOME/opt/dcdn/update_node.sh
 #!/bin/bash
 
-# Завантажуємо останню доступну версію
+# Download the latest available version
 LATEST_VERSION=$(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh)
 
-# Отримуємо поточну версію програми без зайвих частин (п’яте поле)
+# Get the current version of the program without unnecessary parts 
 CURRENT_VERSION=\$($HOME/opt/dcdn/pop --version | awk '{print \$5}')
 
-# Виводимо поточну та останню версію для перевірки
-echo "Поточна версія: \$CURRENT_VERSION"
-echo "Остання доступна версія: \$LATEST_VERSION"
+# Print the current and latest version for verification
+echo "Current version: \$CURRENT_VERSION"
+echo "Latest available version: \$LATEST_VERSION"
 
-# Порівнюємо версії
+# Comparing versions
 if [ "\$CURRENT_VERSION" != "\$LATEST_VERSION" ]; then
-    echo "Оновлення доступне! Оновлюємо версію..."
+    echo "Update available! Updating version..."
 
-    # Зупиняємо службу
+    # Stopping the service
     sudo systemctl stop pop
 
-    # Завантажуємо нову версію
+    # Downloading the new version
     sudo wget -O $HOME/opt/dcdn/pop "https://dl.pipecdn.app/\$LATEST_VERSION/pop"
     sudo chmod +x $HOME/opt/dcdn/pop
 
-    # Оновлюємо символьне посилання
+    # Update the symbolic link
     sudo ln -s $HOME/opt/dcdn/pop /usr/local/bin/pop -f
 
-    # Перезапускаємо службу
+    # Restart the service
     sudo systemctl start pop
 
-    echo "Оновлення успішно завершено."
+    echo "Update completed successfully."
 else
-    echo "Ви вже використовуєте останню версію: \$CURRENT_VERSION"
+    echo "You are already using the latest version: \$CURRENT_VERSION"
 fi
 EOF
 
     sudo chmod +x $HOME/opt/dcdn/update_node.sh
 
-    # Створюємо службу systemd для автооновлення
+    # Create a systemd service for auto-update
     sudo tee /etc/systemd/system/node_update.service > /dev/null << EOF
 [Unit]
 Description=Pipe POP Node Update Service
@@ -200,7 +207,7 @@ WorkingDirectory=$HOME
 WantedBy=multi-user.target
 EOF
 
-    # Створюємо таймер для виконання служби
+    # Create a timer to execute the service
     sudo tee /etc/systemd/system/node_update.timer > /dev/null << EOF
 [Unit]
 Description=Run Node Update Script Daily
@@ -214,12 +221,12 @@ Unit=node_update.service
 WantedBy=timers.target
 EOF
 
-            # Перезавантажуємо systemd і активуємо таймер
+            # Restart systemd and activate the timer
             sudo systemctl daemon-reload
             sudo systemctl enable node_update.timer
             sudo systemctl start node_update.timer
 
-            echo "Автооновлення налаштоване і активоване."
+            echo "Auto-update is configured and enabled."
             break
             ;;
 
@@ -246,6 +253,7 @@ EOF
 
             sudo systemctl daemon-reload
             sudo systemctl restart pop
+            journalctl -n 100 -f -u pop -o cat
             break
             ;;
 
@@ -258,7 +266,7 @@ EOF
             read -r -p "Wipe all DATA? [y/N] " response
             case "$response" in
                 [yY][eE][sS]|[yY]) 
-                    echo "🔴 Початок процесу видалення Pipe POP Node..."
+                    echo "Starting the Pipe POP Node removal process..."
                     stop_and_disable_pop
                     sudo rm -f /etc/systemd/system/pop.service
                     sudo systemctl daemon-reload
@@ -268,13 +276,13 @@ EOF
                     rm -rf $HOME/opt/dcdn
                     sudo rm -f /usr/local/bin/pop
 
-                    sudo journalctl --vacuum-time=1s  # Очищення старих логів
+                    sudo journalctl --vacuum-time=1s
 
-                    echo "✅ Видалення завершено успішно!"
+                    echo "Removal completed successfully."
                     ;;
 
                 *)
-                    echo "❌ Видалення скасовано."
+                    echo "Uninstallation canceled."
                     ;;
             esac
             break
