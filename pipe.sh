@@ -4,7 +4,8 @@ do
 # Перевірка на наявність curl і wget
 command -v curl >/dev/null 2>&1 || { echo "curl не знайдено, будь ласка, встановіть curl."; exit 1; }
 command -v wget >/dev/null 2>&1 || { echo "wget не знайдено, будь ласка, встановіть wget."; exit 1; }
-
+DISK=150
+RAM=8
 LATEST_VERSION=$(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh)
 
 # Функція для зупинки і відключення сервісу pop
@@ -36,7 +37,15 @@ delete_autoupdate(){
         echo "Автооновлення було видалене."
     fi
 }
-
+port_check() {
+    local PORT=8003
+    if sudo lsof -i :$PORT >/dev/null 2>&1; then
+        echo "Ошибка: Порт $PORT занят. Остановка установки."
+        exit 1
+    else
+        echo "Порт $PORT свободен. Продолжаем установку."
+    fi
+}
 # Меню
 PS3='Select an action: '
 options=("Install" "Update" "Logs" "Status" "AutoUpdate" "Ref" "Uninstall" "Exit")
@@ -45,6 +54,7 @@ select opt in "${options[@]}"; do
     case $opt in
         "Install")
             cd $HOME
+            port_check
             sudo mkdir -p $HOME/opt/dcdn/download_cache
             sudo wget -O $HOME/opt/dcdn/pop "https://dl.pipecdn.app/$LATEST_VERSION/pop"
             sudo chmod +x $HOME/opt/dcdn/pop
@@ -71,7 +81,7 @@ After=network.target
 Wants=network-online.target
 
 [Service]
-ExecStart=$HOME/opt/dcdn/pop --ram=4 --pubKey $PUB_KEY --max-disk 150 --cache-dir $HOME/opt/dcdn/download_cache
+ExecStart=$HOME/opt/dcdn/pop --ram=$RAM --pubKey $PUB_KEY --max-disk $DISK --cache-dir $HOME/opt/dcdn/download_cache
 Restart=always
 RestartSec=5
 LimitNOFILE=65536
@@ -212,6 +222,18 @@ EOF
 
         "Status")
             $HOME/opt/dcdn/pop --status
+            break
+            ;;
+        
+        "Сhange System Requirements")
+            echo "Enter RAM: "
+            read NEW_RAM
+            echo "Enter STORAGE: "
+            read STORAGE            
+            sudo sed -i 's/--ram=[^ ]*/--ram=$NEW_RAM/' /etc/systemd/system/pop.service
+            sudo sed -i 's/--max-disk [^ ]*/--max-disk $STORAGE/' /etc/systemd/system/pop.service
+            sudo systemctl daemon-reload
+            sudo systemctl restart pop
             break
             ;;
 
