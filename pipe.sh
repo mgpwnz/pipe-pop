@@ -39,7 +39,7 @@ delete_autoupdate(){
 
 # Меню
 PS3='Select an action: '
-options=("Install" "Update" "Logs" "AutoUpdate" "Ref" "Uninstall" "Exit")
+options=("Install" "Update" "Logs" "Status" "AutoUpdate" "Ref" "Uninstall" "Exit")
 
 select opt in "${options[@]}"; do
     case $opt in
@@ -207,6 +207,11 @@ EOF
 
         "Ref")
             $HOME/opt/dcdn/pop --gen-referral-route
+            break
+            ;;
+
+        "Status")
+            $HOME/opt/dcdn/pop --status
             break
             ;;
 
