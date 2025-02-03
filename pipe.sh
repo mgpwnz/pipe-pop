@@ -25,6 +25,17 @@ backup_node_info() {
         echo "node_info.json not found, skipping backup."
     fi
 }
+delete_autoupdate(){
+    if [ -f "$HOME/opt/dcdn/update_node.sh" ]; then
+        rm $HOME/opt/dcdn/update_node.sh
+        sudo rm /etc/systemd/system/node_update.service
+        sudo rm /etc/systemd/system/node_update.timer
+        sudo systemctl daemon-reload
+        sudo systemctl disable node_update.timer
+        sudo systemctl stop node_update.timer
+        echo "Автооновлення було видалене."
+    fi
+}
 
 # Меню
 PS3='Select an action: '
@@ -176,7 +187,7 @@ EOF
 Description=Run Node Update Script Daily
 
 [Timer]
-OnBootSec=10min
+OnBootSec=60min
 OnUnitActiveSec=1d
 Unit=node_update.service
 
@@ -214,7 +225,7 @@ EOF
                     sudo systemctl daemon-reload
 
                     backup_node_info
-
+                    delete_autoupdate
                     rm -rf $HOME/opt/dcdn
                     sudo rm -f /usr/local/bin/pop
 
