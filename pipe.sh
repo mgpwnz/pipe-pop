@@ -1,15 +1,29 @@
 #!/bin/bash
-
+while true
+do
 # Перевірка на наявність curl і wget
 command -v curl >/dev/null 2>&1 || { echo "curl не знайдено, будь ласка, встановіть curl."; exit 1; }
 command -v wget >/dev/null 2>&1 || { echo "wget не знайдено, будь ласка, встановіть wget."; exit 1; }
 
-LATEST_VERSION=$(. <(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh))
+LATEST_VERSION=$(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh)
 
 # Функція для зупинки і відключення сервісу pop
 stop_and_disable_pop() {
     sudo systemctl stop pop
     sudo systemctl disable pop
+}
+backup_node_info() {
+    # Create the backup directory if it doesn't exist
+    mkdir -p "$HOME/pipe_backup"
+
+    # Check if node_info.json exists before copying
+    if [ -f "$HOME/opt/dcdn/node_info.json" ]; then
+        # Copy the node_info.json file to the backup directory
+        cp "$HOME/opt/dcdn/node_info.json" "$HOME/pipe_backup/node_info.json"
+        echo "Backup of node_info.json completed."
+    else
+        echo "node_info.json not found, skipping backup."
+    fi
 }
 
 # Меню
@@ -68,8 +82,8 @@ EOF
 
         "Update")
             cd $HOME
-            mkdir -p $HOME/pipe_backup
-            cp $HOME/opt/dcdn/node_info.json $HOME/pipe_backup/node_info.json
+            #back up  
+            backup_node_info
 
             CURRENT_VERSION=$($HOME/opt/dcdn/pop --version 2>/dev/null)
             if [ "$CURRENT_VERSION" == "$LATEST_VERSION" ]; then
@@ -97,32 +111,50 @@ EOF
             ;;
 
         "AutoUpdate")
+            #back up        
+            backup_node_info
+        
             # Створюємо скрипт для оновлення
             echo "Створення скрипту оновлення..."
-            cat << EOF > $HOME/opt/dcdn/update_node.sh
-        #!/bin/bash
-        LATEST_VERSION=$(. <(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh))
+    cat << EOF > $HOME/opt/dcdn/update_node.sh
+#!/bin/bash
 
-        CURRENT_VERSION=$($HOME/opt/dcdn/pop --version | awk '{print $5}')
+# Завантажуємо останню доступну версію
+LATEST_VERSION=$(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh)
 
-        if [ "\$CURRENT_VERSION" != "\$LATEST_VERSION" ]; then
-            echo "Оновлення доступне! Оновлюємо версію..."
+# Отримуємо поточну версію програми без зайвих частин (п’яте поле)
+CURRENT_VERSION=\$($HOME/opt/dcdn/pop --version | awk '{print \$5}')
 
-            sudo systemctl stop pop
-            sudo wget -O $HOME/opt/dcdn/pop "https://dl.pipecdn.app/\$LATEST_VERSION/pop"
-            sudo chmod +x $HOME/opt/dcdn/pop
-            sudo ln -s $HOME/opt/dcdn/pop /usr/local/bin/pop -f
+# Виводимо поточну та останню версію для перевірки
+echo "Поточна версія: \$CURRENT_VERSION"
+echo "Остання доступна версія: \$LATEST_VERSION"
 
-            sudo systemctl start pop
-            echo "Оновлення успішно завершено."
-        else
-            echo "Ви вже використовуєте останню версію: \$CURRENT_VERSION"
-        fi
-        EOF
+# Порівнюємо версії
+if [ "\$CURRENT_VERSION" != "\$LATEST_VERSION" ]; then
+    echo "Оновлення доступне! Оновлюємо версію..."
 
-            sudo chmod +x $HOME/opt/dcdn/update_node.sh
+    # Зупиняємо службу
+    sudo systemctl stop pop
 
-            # Створюємо службу systemd для автооновлення
+    # Завантажуємо нову версію
+    sudo wget -O $HOME/opt/dcdn/pop "https://dl.pipecdn.app/\$LATEST_VERSION/pop"
+    sudo chmod +x $HOME/opt/dcdn/pop
+
+    # Оновлюємо символьне посилання
+    sudo ln -s $HOME/opt/dcdn/pop /usr/local/bin/pop -f
+
+    # Перезапускаємо службу
+    sudo systemctl start pop
+
+    echo "Оновлення успішно завершено."
+else
+    echo "Ви вже використовуєте останню версію: \$CURRENT_VERSION"
+fi
+EOF
+
+    sudo chmod +x $HOME/opt/dcdn/update_node.sh
+
+    # Створюємо службу systemd для автооновлення
     sudo tee /etc/systemd/system/node_update.service > /dev/null << EOF
 [Unit]
 Description=Pipe POP Node Update Service
@@ -161,6 +193,7 @@ EOF
             break
             ;;
 
+
         "Ref")
             $HOME/opt/dcdn/pop --gen-referral-route
             break
@@ -180,8 +213,7 @@ EOF
                     sudo rm -f /etc/systemd/system/pop.service
                     sudo systemctl daemon-reload
 
-                    mkdir -p $HOME/pipe_backup
-                    cp $HOME/opt/dcdn/node_info.json $HOME/pipe_backup/node_info.json
+                    backup_node_info
 
                     rm -rf $HOME/opt/dcdn
                     sudo rm -f /usr/local/bin/pop
@@ -206,4 +238,5 @@ EOF
             echo "Invalid option $REPLY"
             ;;
     esac
+done
 done
