@@ -4,52 +4,7 @@
 command -v curl >/dev/null 2>&1 || { echo "curl не знайдено, будь ласка, встановіть curl."; exit 1; }
 command -v wget >/dev/null 2>&1 || { echo "wget не знайдено, будь ласка, встановіть wget."; exit 1; }
 
-# Функція для отримання останньої доступної версії
-get_latest_version() {
-    local BASE_URL="$1"
-    local APP_NAME="$2"
-    local START_VERSION="$3"
-
-    local MAJOR=$(echo "$START_VERSION" | cut -d. -f1 | tr -d 'v')
-    local MINOR=$(echo "$START_VERSION" | cut -d. -f2)
-    local PATCH=$(echo "$START_VERSION" | cut -d. -f3)
-
-    local LAST_VERSION=""
-
-    check_version() {
-        local VERSION="v${MAJOR}.${MINOR}.${PATCH}"
-        local URL="${BASE_URL}/${VERSION}/${APP_NAME}"
-        local HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -I "$URL")
-
-        if [ "$HTTP_CODE" -eq 200 ]; then
-            LAST_VERSION=$VERSION
-            return 0
-        else
-            return 1
-        fi
-    }
-
-    while true; do
-        if check_version; then
-            ((PATCH++))
-        else
-            if [ "$PATCH" -gt 0 ]; then
-                ((PATCH--))
-                LAST_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
-            fi
-            PATCH=0
-            ((MINOR++))  # Переходимо до наступної мінорної версії
-            if ! check_version; then
-                ((MINOR--))
-                break
-            fi
-        fi
-    done
-
-    echo "$LAST_VERSION"
-}
-
-LATEST_VERSION=$(get_latest_version "https://dl.pipecdn.app" "pop" "v0.2.0")
+LATEST_VERSION=$(. <(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh))
 
 # Функція для зупинки і відключення сервісу pop
 stop_and_disable_pop() {
@@ -142,7 +97,67 @@ EOF
             ;;
 
         "AutoUpdate")
-            echo "Auto-update feature is under development."
+            # Створюємо скрипт для оновлення
+            echo "Створення скрипту оновлення..."
+            cat << EOF > $HOME/opt/dcdn/update_node.sh
+        #!/bin/bash
+        LATEST_VERSION=$(. <(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh))
+
+        CURRENT_VERSION=$($HOME/opt/dcdn/pop --version | awk '{print $5}')
+
+        if [ "\$CURRENT_VERSION" != "\$LATEST_VERSION" ]; then
+            echo "Оновлення доступне! Оновлюємо версію..."
+
+            sudo systemctl stop pop
+            sudo wget -O $HOME/opt/dcdn/pop "https://dl.pipecdn.app/\$LATEST_VERSION/pop"
+            sudo chmod +x $HOME/opt/dcdn/pop
+            sudo ln -s $HOME/opt/dcdn/pop /usr/local/bin/pop -f
+
+            sudo systemctl start pop
+            echo "Оновлення успішно завершено."
+        else
+            echo "Ви вже використовуєте останню версію: \$CURRENT_VERSION"
+        fi
+        EOF
+
+            sudo chmod +x $HOME/opt/dcdn/update_node.sh
+
+            # Створюємо службу systemd для автооновлення
+    sudo tee /etc/systemd/system/node_update.service > /dev/null << EOF
+[Unit]
+Description=Pipe POP Node Update Service
+After=network.target
+
+[Service]
+ExecStart=$HOME/opt/dcdn/update_node.sh
+Restart=on-failure
+User=$USER
+WorkingDirectory=$HOME
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    # Створюємо таймер для виконання служби
+    sudo tee /etc/systemd/system/node_update.timer > /dev/null << EOF
+[Unit]
+Description=Run Node Update Script Daily
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=1d
+Unit=node_update.service
+
+[Install]
+WantedBy=timers.target
+EOF
+
+            # Перезавантажуємо systemd і активуємо таймер
+            sudo systemctl daemon-reload
+            sudo systemctl enable node_update.timer
+            sudo systemctl start node_update.timer
+
+            echo "Автооновлення налаштоване і активоване."
             break
             ;;
 
