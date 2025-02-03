@@ -43,7 +43,9 @@ How It Works
 ✅ Runs once 5 minutes after boot (OnBootSec=5m).
 ✅ Stops, downloads, updates, and restarts pop when an update is found.
 ✅ Uses systemd instead of a background script.
---------------------------------------------------------------------------
+
+
+
 TXH VETALL!
 wget -q -O pipe.sh https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/pipe.sh && chmod +x pipe.sh && ./pipe.sh
 
