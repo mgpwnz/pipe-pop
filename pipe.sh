@@ -39,9 +39,9 @@ echo -e "\e[33mLatest node version $LATEST_VERSION\e[0m"
 echo -e "\e[92mInstalled node version $LOG_VERSION\e[0m"
 
 if systemctl is-active --quiet node_update.timer; then
-    echo "Auto Update Active"
+    echo -e "\e[32mAuto Update Active\e[0m"
 else
-    echo "Auto Update OFF"
+    echo -e "\e[31mAuto Update OFF\e[0m"
 fi
 
 
