@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Функція для отримання останньої доступної версії
 get_latest_version() {
     local BASE_URL="$1"
     local APP_NAME="$2"
@@ -18,14 +17,13 @@ get_latest_version() {
         local HTTP_CODE=$(curl -s --connect-timeout 5 -o /dev/null -w "%{http_code}" -I "$URL")
 
         if [ "$HTTP_CODE" -eq 200 ]; then
-            LAST_VERSION="${VERSION#v}"  # Зберігаємо версію без префікса 'v'
+            LAST_VERSION="${VERSION#v}"  
             return 0
         else
             return 1
         fi
     }
 
-    # Обмеження на випадок помилки нескінченного циклу
     local MAX_MINOR=20
     local MAX_PATCH=50
 

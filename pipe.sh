@@ -8,23 +8,23 @@ install_package() {
     elif command -v yum >/dev/null 2>&1; then
         sudo yum install -y $PACKAGE
     else
-        echo "Не вдалося визначити пакетний менеджер. Встановіть $PACKAGE вручну."
+        echo "Unable to determine package manager. Please install $PACKAGE manually."
         exit 1
     fi
 }
 
 if ! command -v curl >/dev/null 2>&1; then
-    echo "curl не знайдено. Пакет буде встановлено..."
+    echo "curl not found. Will install..."
     install_package curl
 fi
 
 if ! command -v wget >/dev/null 2>&1; then
-    echo "wget не знайдено. Пакет буде встановлено..."
+    echo "wget not found. Will install..."
     install_package wget
 fi
 
 if ! command -v lsof >/dev/null 2>&1; then
-    echo "lsof не знайдено. Пакет буде встановлено..."
+    echo "lsof not found. Will install..."
     install_package lsof
 fi
 
