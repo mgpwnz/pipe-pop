@@ -18,7 +18,7 @@ get_latest_version() {
         local HTTP_CODE=$(curl -s --connect-timeout 5 -o /dev/null -w "%{http_code}" -I "$URL")
 
         if [ "$HTTP_CODE" -eq 200 ]; then
-            LAST_VERSION=$VERSION
+            LAST_VERSION="${VERSION#v}"  # Зберігаємо версію без префікса 'v'
             return 0
         else
             return 1
@@ -47,8 +47,8 @@ get_latest_version() {
         ((MINOR++))
     done
 
-    echo "${LAST_VERSION#v}"
+    echo "$LAST_VERSION"
 }
 
 LATEST_VERSION=$(get_latest_version "https://dl.pipecdn.app" "pop" "v0.2.0")
-echo "Остання доступна версія: $LATEST_VERSION"
+echo "$LATEST_VERSION"
