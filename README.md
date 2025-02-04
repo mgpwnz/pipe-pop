@@ -48,8 +48,7 @@ How It Works
 
 
 wget -q -O pipe.sh https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/pipe.sh && chmod +x pipe.sh && ./pipe.sh
-ver =
-AutoUpdate status =
+ 
 1) Install                                                                                        
 2) Update                                        
 3) Logs   
