@@ -167,7 +167,7 @@ EOF
 #!/bin/bash
 
 # Download the latest available version
-LATEST_VERSION=\$(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh | bash)
+LATEST_VERSION=$(. <(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh))
 
 # Get the current version of the program
 CURRENT_VERSION=\$($HOME/opt/dcdn/pop --version | awk '{print \$5}')
