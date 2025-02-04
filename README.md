@@ -46,7 +46,6 @@ How It Works
 
 
 
-TXH VETALL!
 
 wget -q -O pipe.sh https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/pipe.sh && chmod +x pipe.sh && ./pipe.sh
 
