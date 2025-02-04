@@ -213,8 +213,7 @@ EOF
                 echo "Update completed successfully."
             else
                 echo "You are already using the latest version: $CURRENT_VERSION"
-            fi+
-            -
+            fi
             break
             ;;
 
