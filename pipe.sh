@@ -150,7 +150,7 @@ download_pop() {
 
 # Menu
 PS3='Select an action: '
-options=("Install" "Update" "Logs" "Change System Requirements" "Status" "AutoUpdate" "Ref" "Uninstall" "Exit")
+options=("Install" "Update" "Logs" "Change System Requirements" "Status" "AutoUpdate" "Rem. AutoUpdate" "Ref" "Uninstall" "Exit")
 
 select opt in "${options[@]}"; do
     case $opt in
@@ -301,8 +301,10 @@ EOF
     echo "Auto-update is configured and enabled."
             break
             ;;
-
-
+        "Rem. AutoUpdate")
+            delete_autoupdate
+            break
+            ;;
 
         "Ref")
             $HOME/opt/dcdn/pop --gen-referral-route
