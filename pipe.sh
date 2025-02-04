@@ -36,7 +36,7 @@ LATEST_VERSION=$(. <(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop
 LOG_VERSION=$(journalctl -n 100 -u pop -o cat | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | tail -1)
 DEF_VERSION=0.2.2
 echo "Latest node version $LATEST_VERSION"
-echo "Node version $LOG_VERSION"
+echo "Insatlled node version $LOG_VERSION"
 
 if systemctl is-active --quiet node_update.timer; then
     echo "Auto Update Active"
@@ -317,7 +317,8 @@ EOF
             ;;
 
         "Ref")
-            $HOME/opt/dcdn/pop --gen-referral-route
+            cd $HOME/opt/dcdn/ && ./pop --gen-referral-route
+            cd $HOME
             break
             ;;
 
