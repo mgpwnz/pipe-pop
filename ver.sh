@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Функція для отримання останньої доступної версії
 get_latest_version() {
     local BASE_URL="$1"
@@ -13,7 +15,7 @@ get_latest_version() {
     check_version() {
         local VERSION="v${MAJOR}.${MINOR}.${PATCH}"
         local URL="${BASE_URL}/${VERSION}/${APP_NAME}"
-        local HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -I "$URL")
+        local HTTP_CODE=$(curl -s --connect-timeout 5 -o /dev/null -w "%{http_code}" -I "$URL")
 
         if [ "$HTTP_CODE" -eq 200 ]; then
             LAST_VERSION=$VERSION
@@ -23,25 +25,30 @@ get_latest_version() {
         fi
     }
 
-    while true; do
-        if check_version; then
-            ((PATCH++))  # Збільшуємо версію PATCH
-        else
-            if [ "$PATCH" -gt 0 ]; then
-                ((PATCH--))  # Зменшуємо версію PATCH, якщо вона була збільшена
-                LAST_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
-            fi
-            PATCH=0  # Скидаємо PATCH
-            ((MINOR++))  # Переходимо до наступної мінорної версії
-            if ! check_version; then
-                ((MINOR--))  # Якщо версія не існує, повертаємось до попередньої
+    # Обмеження на випадок помилки нескінченного циклу
+    local MAX_MINOR=20
+    local MAX_PATCH=50
+
+    while [ "$MINOR" -lt "$MAX_MINOR" ]; do
+        local FOUND_VERSION=false
+
+        for ((PATCH=0; PATCH<MAX_PATCH; PATCH++)); do
+            if check_version; then
+                FOUND_VERSION=true
+            else
                 break
             fi
+        done
+
+        if ! $FOUND_VERSION; then
+            break
         fi
+
+        ((MINOR++))
     done
 
-    echo "$LAST_VERSION"
+    echo "${LAST_VERSION#v}"
 }
 
 LATEST_VERSION=$(get_latest_version "https://dl.pipecdn.app" "pop" "v0.2.0")
-echo "$(echo "$LATEST_VERSION" | sed 's/^v//')"
+echo "Остання доступна версія: $LATEST_VERSION"
