@@ -1,9 +1,35 @@
 #!/bin/bash 
+# Check for the presence of curl and wget
+install_package() {
+    PACKAGE=$1
+    if command -v apt >/dev/null 2>&1; then
+        sudo apt update
+        sudo apt install -y $PACKAGE
+    elif command -v yum >/dev/null 2>&1; then
+        sudo yum install -y $PACKAGE
+    else
+        echo "Не вдалося визначити пакетний менеджер. Встановіть $PACKAGE вручну."
+        exit 1
+    fi
+}
+
+if ! command -v curl >/dev/null 2>&1; then
+    echo "curl не знайдено. Пакет буде встановлено..."
+    install_package curl
+fi
+
+if ! command -v wget >/dev/null 2>&1; then
+    echo "wget не знайдено. Пакет буде встановлено..."
+    install_package wget
+fi
+
+if ! command -v lsof >/dev/null 2>&1; then
+    echo "lsof не знайдено. Пакет буде встановлено..."
+    install_package lsof
+fi
+
 while true
 do
-# Check for the presence of curl and wget
-command -v curl >/dev/null 2>&1 || { echo "curl not found, please install curl."; exit 1; }
-command -v wget >/dev/null 2>&1 || { echo "wget not found, please install wget."; exit 1; }
 DISK=150
 RAM=8
 LATEST_VERSION=$(. <(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh))
@@ -134,7 +160,7 @@ select opt in "${options[@]}"; do
             download_and_prepare_pop
 
             if [ ! -L /usr/local/bin/pop ]; then
-                sudo ln -s $HOME/opt/dcdn/pop /usr/local/bin/pop
+                sudo ln -s "$HOME/opt/dcdn/pop" /usr/local/bin/pop
             fi
 
             echo "Enter Solana wallet: "
@@ -182,7 +208,7 @@ EOF
             LATEST_VERSION=$(. <(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh))
 
             # Get the current version of the program
-            CURRENT_VERSION=$($HOME/opt/dcdn/pop --version | awk '{print \$5}')
+            CURRENT_VERSION=$($HOME/opt/dcdn/pop --version | awk '{print $5}')
 
             # Print the current and latest version for verification
             echo "Current version: $CURRENT_VERSION"
@@ -206,7 +232,7 @@ EOF
 
                 # Update the symbolic link
                 sudo rm -f /usr/local/bin/pop
-                sudo ln -s $HOME/opt/dcdn/pop /usr/local/bin/pop
+                sudo ln -s "$HOME/opt/dcdn/pop" /usr/local/bin/pop
 
                 # Restart the service
                 sudo systemctl start pop
