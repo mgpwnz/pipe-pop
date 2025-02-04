@@ -33,7 +33,10 @@ do
 DISK=150
 RAM=8
 LATEST_VERSION=$(. <(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh))
+LOG_VERSION=$(journalctl -n 100 -u pop -o cat | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | tail -1)
+DEF_VERSION=0.2.2
 echo "Latest node version $LATEST_VERSION"
+echo "Node version $LOG_VERSION"
 
 if systemctl is-active --quiet node_update.timer; then
     echo "Auto Update Active"
@@ -105,7 +108,7 @@ download_and_prepare_pop() {
     sudo mkdir -p "$dest_dir/download_cache"
 
     while (( attempt < max_retries )); do
-        sudo wget -O "$dest_file" "https://dl.pipecdn.app/v$LATEST_VERSION/pop"
+        sudo wget -O "$dest_file" "https://dl.pipecdn.app/v$DEF_VERSION/pop"
         if [ -s "$dest_file" ]; then
             sudo chmod +x "$dest_file"
             echo "Download successful."
@@ -130,7 +133,7 @@ download_pop() {
     sudo mkdir -p "$dest_dir/download_cache"
 
     while (( attempt < max_retries )); do
-        sudo wget -O "$temp_file" "https://dl.pipecdn.app/v$LATEST_VERSION/pop"
+        sudo wget -O "$temp_file" "https://dl.pipecdn.app/v$LOG_VERSION/pop"
         if [ -s "$temp_file" ]; then
             echo "Download successful."
             break
@@ -157,6 +160,15 @@ select opt in "${options[@]}"; do
         "Install")
             cd $HOME
             port_check
+            echo "Find latest node version $LATEST_VERSION"
+            echo "Select version option:"
+            echo "1) Use default version ($DEF_VERSION)"
+            echo "2) Enter version manually"
+            read -rp "Enter choice (1 or 2): " choice
+
+            if [ "$choice" == "2" ]; then
+                read -rp "Enter version: " DEF_VERSION
+            fi
             download_and_prepare_pop
 
             if [ ! -L /usr/local/bin/pop ]; then
@@ -205,17 +217,15 @@ EOF
             cd $HOME
             backup_node_info
 
-            LATEST_VERSION=$(. <(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh))
-
             # Get the current version of the program
             CURRENT_VERSION=$($HOME/opt/dcdn/pop --version | awk '{print $5}')
 
             # Print the current and latest version for verification
             echo "Current version: $CURRENT_VERSION"
-            echo "Latest available version: $LATEST_VERSION"
+            echo "Log available version: $LOG_VERSION"
 
             # Comparing versions
-            if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
+            if [ "$CURRENT_VERSION" != "$LOG_VERSION" ]; then
                 echo "Update available! Updating version..."
 
                 # Downloading the new version as a temporary file

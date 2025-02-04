@@ -2,16 +2,16 @@
 
 # Download the latest available version
 LATEST_VERSION=$(. <(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh))
-
+LOG_VERSION=$(journalctl -n 100 -u pop -o cat | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | tail -1)
 # Get the current version of the program
 CURRENT_VERSION=$($HOME/opt/dcdn/pop --version | awk '{print \$5}')
 
 # Print the current and latest version for verification
 echo "Current version: $CURRENT_VERSION"
-echo "Latest available version: $LATEST_VERSION"
+echo "Latest available version: $LOG_VERSION"
 
 # Comparing versions
-if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
+if [ "$CURRENT_VERSION" != "$LOG_VERSION" ]; then
     echo "Update available! Updating version..."
 
     # Downloading the new version as a temporary file
@@ -24,7 +24,7 @@ if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
         sudo mkdir -p "$dest_dir/download_cache"
 
         while (( attempt < max_retries )); do
-            sudo wget -O "$temp_file" "https://dl.pipecdn.app/v$LATEST_VERSION/pop"
+            sudo wget -O "$temp_file" "https://dl.pipecdn.app/v$LOG_VERSION/pop"
             if [ -s "$temp_file" ]; then
                 echo "Download successful."
                 break
