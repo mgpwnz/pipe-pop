@@ -7,6 +7,14 @@ command -v wget >/dev/null 2>&1 || { echo "wget not found, please install wget."
 DISK=150
 RAM=8
 LATEST_VERSION=$(. <(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh))
+echo "Latest node version $LATEST_VERSION"
+
+if systemctl is-active --quiet node_update.timer; then
+    echo "Auto Update Active"
+else
+    echo "Auto Update OFF"
+fi
+
 
 # Function to stop and disable the pop service
 stop_and_disable_pop() {
