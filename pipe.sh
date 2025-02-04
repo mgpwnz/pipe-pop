@@ -35,8 +35,8 @@ RAM=8
 LATEST_VERSION=$(. <(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh))
 LOG_VERSION=$(journalctl -n 100 -u pop -o cat | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | tail -1)
 DEF_VERSION=0.2.2
-echo "Latest node version $LATEST_VERSION"
-echo "Insatlled node version $LOG_VERSION"
+echo -e "\e[92mLatest node version $LATEST_VERSION\e[0m"
+echo -e "\e[92mInstalled node version $LOG_VERSION\e[0m"
 
 if systemctl is-active --quiet node_update.timer; then
     echo "Auto Update Active"
