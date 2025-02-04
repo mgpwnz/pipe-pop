@@ -213,7 +213,8 @@ EOF
                 echo "Update completed successfully."
             else
                 echo "You are already using the latest version: $CURRENT_VERSION"
-            fi
+            fi+
+            -
             break
             ;;
 
@@ -283,7 +284,8 @@ EOF
             ;;
 
         "Status")
-            $HOME/opt/dcdn/pop --status
+            cd $HOME/opt/dcdn/ && ./pop --status
+            cd $HOME
             break
             ;;
         
