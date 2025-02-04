@@ -6,7 +6,7 @@ command -v curl >/dev/null 2>&1 || { echo "curl not found, please install curl."
 command -v wget >/dev/null 2>&1 || { echo "wget not found, please install wget."; exit 1; }
 DISK=150
 RAM=8
-LATEST_VERSION=$(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh)
+LATEST_VERSION=$(. <(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh))
 
 # Function to stop and disable the pop service
 stop_and_disable_pop() {
