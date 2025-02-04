@@ -79,7 +79,7 @@ download_and_prepare_pop() {
     sudo mkdir -p "$dest_dir/download_cache"
 
     while (( attempt < max_retries )); do
-        sudo wget -O "$dest_file" "https://dl.pipecdn.app/$LATEST_VERSION/pop"
+        sudo wget -O "$dest_file" "https://dl.pipecdn.app/v$LATEST_VERSION/pop"
         if [ -s "$dest_file" ]; then
             sudo chmod +x "$dest_file"
             echo "Download successful."

@@ -24,7 +24,7 @@ if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
         sudo mkdir -p "$dest_dir/download_cache"
 
         while (( attempt < max_retries )); do
-            sudo wget -O "$temp_file" "https://dl.pipecdn.app/$LATEST_VERSION/pop"
+            sudo wget -O "$temp_file" "https://dl.pipecdn.app/v$LATEST_VERSION/pop"
             if [ -s "$temp_file" ]; then
                 echo "Download successful."
                 break
