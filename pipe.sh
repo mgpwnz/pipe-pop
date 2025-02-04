@@ -95,6 +95,32 @@ download_and_prepare_pop() {
     sudo rm -rf "$dest_dir/download_cache"
     exit 1
 }
+download_pop() {
+    local max_retries=5
+    local attempt=0
+    local dest_dir="$HOME/opt/dcdn"
+    local temp_file="$dest_dir/pop.tmp"
+
+    sudo mkdir -p "$dest_dir/download_cache"
+
+    while (( attempt < max_retries )); do
+        sudo wget -O "$temp_file" "https://dl.pipecdn.app/v$LATEST_VERSION/pop"
+        if [ -s "$temp_file" ]; then
+            echo "Download successful."
+            break
+        else
+            echo "Downloaded file is empty, retrying... ($((attempt + 1))/$max_retries)"
+            ((attempt++))
+        fi
+    done
+
+    if (( attempt == max_retries )); then
+        echo "Failed to download file after $max_retries attempts. Exiting."
+        sudo rm -rf "$dest_dir/download_cache"
+        exit 1
+    fi
+}
+
 
 # Menu
 PS3='Select an action: '
@@ -167,31 +193,6 @@ EOF
                 echo "Update available! Updating version..."
 
                 # Downloading the new version as a temporary file
-                download_pop() {
-                    local max_retries=5
-                    local attempt=0
-                    local dest_dir="$HOME/opt/dcdn"
-                    local temp_file="$dest_dir/pop.tmp"
-
-                    sudo mkdir -p "$dest_dir/download_cache"
-
-                    while (( attempt < max_retries )); do
-                        sudo wget -O "$temp_file" "https://dl.pipecdn.app/v$LATEST_VERSION/pop"
-                        if [ -s "$temp_file" ]; then
-                            echo "Download successful."
-                            break
-                        else
-                            echo "Downloaded file is empty, retrying... ($((attempt + 1))/$max_retries)"
-                            ((attempt++))
-                        fi
-                    done
-
-                    if (( attempt == max_retries )); then
-                        echo "Failed to download file after $max_retries attempts. Exiting."
-                        sudo rm -rf "$dest_dir/download_cache"
-                        exit 1
-                    fi
-                }
 
                 download_pop
 
