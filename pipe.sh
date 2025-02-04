@@ -18,12 +18,17 @@ backup_node_info() {
     # Create the backup directory if it doesn't exist
     mkdir -p "$HOME/pipe_backup"
 
-    # Check if node_info.json exists before copying
-    if [ -f "$HOME/opt/dcdn/node_info.json" ]; then
-        cp "$HOME/opt/dcdn/node_info.json" "$HOME/pipe_backup/node_info.json"
-        echo "Backup of node_info.json completed."
+    # Check if node_info.json exists in the backup directory before copying
+    if [ ! -f "$HOME/pipe_backup/node_info.json" ]; then
+        # Check if node_info.json exists in the original location
+        if [ -f "$HOME/opt/dcdn/node_info.json" ]; then
+            cp "$HOME/opt/dcdn/node_info.json" "$HOME/pipe_backup/node_info.json"
+            echo "Backup of node_info.json completed."
+        else
+            echo "node_info.json not found, skipping backup."
+        fi
     else
-        echo "node_info.json not found, skipping backup."
+        echo "Backup already exists, skipping backup."
     fi
 }
 
@@ -57,15 +62,30 @@ restore_backup(){
         echo "Backup not found."
     fi
 }
-download_pop() {
-    while true; do
-        sudo wget -O $HOME/opt/dcdn/pop "https://dl.pipecdn.app/$LATEST_VERSION/pop"
-        if [ -s "$HOME/opt/dcdn/pop" ]; then
-            break
+download_and_prepare_pop() {
+    local max_retries=5
+    local attempt=0
+    local dest_dir="$HOME/opt/dcdn"
+    local dest_file="$dest_dir/pop"
+
+    sudo mkdir -p "$dest_dir/download_cache"
+
+    while (( attempt < max_retries )); do
+        sudo wget -O "$dest_file" "https://dl.pipecdn.app/$LATEST_VERSION/pop"
+        if [ -s "$dest_file" ]; then
+            sudo chmod +x "$dest_file"
+            echo "Download successful."
+            sudo rm -rf "$dest_dir/download_cache"
+            return 0
         else
-            echo "Downloaded file is empty, retrying..."
+            echo "Downloaded file is empty, retrying... ($((attempt + 1))/$max_retries)"
+            ((attempt++))
         fi
     done
+
+    echo "Failed to download file after $max_retries attempts. Exiting."
+    sudo rm -rf "$dest_dir/download_cache"
+    exit 1
 }
 
 # Menu
@@ -77,9 +97,7 @@ select opt in "${options[@]}"; do
         "Install")
             cd $HOME
             port_check
-            sudo mkdir -p $HOME/opt/dcdn/download_cache
-            download_pop
-            sudo chmod +x $HOME/opt/dcdn/pop
+            download_and_prepare_pop
 
             if [ ! -L /usr/local/bin/pop ]; then
                 sudo ln -s $HOME/opt/dcdn/pop /usr/local/bin/pop
@@ -153,67 +171,18 @@ EOF
             ;;
 
         "AutoUpdate")
-            #!/bin/bash
-            if [ -f "$HOME/opt/dcdn/update_node.sh" ]; then
-                echo "File $HOME/opt/dcdn/update_node.sh exists. Interrupting script execution."
-                exit 1
-            fi
+        # Check if the update script exists
+        if [ ! -f "$HOME/opt/dcdn/update_node.sh" ]; then
+        echo "File $HOME/opt/dcdn/update_node.sh does not exist. Creating the update script..."
+        backup_node_info
 
-            backup_node_info
-
-            # Creating update script
-            echo "Creating update script..."
-    cat << EOF > $HOME/opt/dcdn/update_node.sh
-#!/bin/bash
-
-# Download the latest available version
-LATEST_VERSION=$(. <(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh))
-
-# Get the current version of the program
-CURRENT_VERSION=\$($HOME/opt/dcdn/pop --version | awk '{print \$5}')
-
-# Print the current and latest version for verification
-echo "Current version: \$CURRENT_VERSION"
-echo "Latest available version: \$LATEST_VERSION"
-
-# Comparing versions
-if [ "\$CURRENT_VERSION" != "\$LATEST_VERSION" ]; then
-    echo "Update available! Updating version..."
-
-    # Stopping the service
-    sudo systemctl stop pop
-
-    # Downloading the new version
-    download_pop() {
-        while true; do
-            sudo wget -O \$HOME/opt/dcdn/pop "https://dl.pipecdn.app/\$LATEST_VERSION/pop"
-            if [ -s "\$HOME/opt/dcdn/pop" ]; then
-                break
-            else
-                echo "Downloaded file is empty, retrying..."
-            fi
-        done
-    }
-
-    download_pop
-
-    # Set executable permissions
-    sudo chmod +x \$HOME/opt/dcdn/pop
-
-    # Update the symbolic link
-    sudo rm -f /usr/local/bin/pop
-    sudo ln -s \$HOME/opt/dcdn/pop /usr/local/bin/pop
-
-    # Restart the service
-    sudo systemctl start pop
-
-    echo "Update completed successfully."
-else
-    echo "You are already using the latest version: \$CURRENT_VERSION"
-fi
-EOF
-
-    sudo chmod +x $HOME/opt/dcdn/update_node.sh
+        # Download the update script
+        wget -O $HOME/opt/dcdn/update_node.sh https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/update_node.sh
+        sudo chmod +x $HOME/opt/dcdn/update_node.sh
+        else
+            echo "File $HOME/opt/dcdn/update_node.sh already exists. Interrupting script execution."
+            exit 1
+        fi
 
     # Create a systemd service for auto-update
     sudo tee /etc/systemd/system/node_update.service > /dev/null << EOF
@@ -245,14 +214,15 @@ Unit=node_update.service
 WantedBy=timers.target
 EOF
 
-            # Restart systemd and activate the timer
-            sudo systemctl daemon-reload
-            sudo systemctl enable node_update.timer
-            sudo systemctl start node_update.timer
+    # Restart systemd and activate the timer
+    sudo systemctl daemon-reload
+    sudo systemctl enable node_update.timer
+    sudo systemctl start node_update.timer
 
-            echo "Auto-update is configured and enabled."
+    echo "Auto-update is configured and enabled."
             break
             ;;
+
 
 
         "Ref")
