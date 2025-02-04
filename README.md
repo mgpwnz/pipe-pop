@@ -48,13 +48,15 @@ How It Works
 
 
 wget -q -O pipe.sh https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/pipe.sh && chmod +x pipe.sh && ./pipe.sh
-
+ver =
+AutoUpdate status =
 1) Install                                                                                        
 2) Update                                        
 3) Logs   
 4) Сhange System Requirements
 5) Status
 6) AutoUpdate
-7) Ref
-8) Uninstall
-9) Exit
+7) Rem. AutoUpdate
+8) Ref
+9) Uninstall
+10) Exit
