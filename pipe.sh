@@ -97,6 +97,13 @@ restore_backup(){
         echo "Backup of node_info.json restored."
     else
         echo "Backup not found."
+        echo "Enter REF code (optional): "
+            read REF
+
+            if [ -n "$REF" ]; then
+                cd $HOME/opt/dcdn/
+                ./pop --signup-by-referral-route "$REF"
+            fi
     fi
 }
 download_and_prepare_pop() {
@@ -177,13 +184,6 @@ select opt in "${options[@]}"; do
 
             echo "Enter Solana wallet: "
             read PUB_KEY
-            echo "Enter REF code (optional): "
-            read REF
-
-            if [ -n "$REF" ]; then
-                cd $HOME/opt/dcdn/
-                ./pop --signup-by-referral-route "$REF"
-            fi
             restore_backup
 
             sudo tee /etc/systemd/system/pop.service > /dev/null << EOF
