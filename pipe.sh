@@ -57,6 +57,16 @@ restore_backup(){
         echo "Backup not found."
     fi
 }
+download_pop() {
+    while true; do
+        sudo wget -O $HOME/opt/dcdn/pop "https://dl.pipecdn.app/$LATEST_VERSION/pop"
+        if [ -s "$HOME/opt/dcdn/pop" ]; then
+            break
+        else
+            echo "Downloaded file is empty, retrying..."
+        fi
+    done
+}
 
 # Menu
 PS3='Select an action: '
@@ -68,7 +78,7 @@ select opt in "${options[@]}"; do
             cd $HOME
             port_check
             sudo mkdir -p $HOME/opt/dcdn/download_cache
-            sudo wget -O $HOME/opt/dcdn/pop "https://dl.pipecdn.app/$LATEST_VERSION/pop"
+            download_pop
             sudo chmod +x $HOME/opt/dcdn/pop
 
             if [ ! -L /usr/local/bin/pop ]; then
@@ -157,9 +167,9 @@ EOF
 #!/bin/bash
 
 # Download the latest available version
-LATEST_VERSION=$(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh)
+LATEST_VERSION=\$(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh | bash)
 
-# Get the current version of the program without unnecessary parts 
+# Get the current version of the program
 CURRENT_VERSION=\$($HOME/opt/dcdn/pop --version | awk '{print \$5}')
 
 # Print the current and latest version for verification
@@ -174,11 +184,25 @@ if [ "\$CURRENT_VERSION" != "\$LATEST_VERSION" ]; then
     sudo systemctl stop pop
 
     # Downloading the new version
-    sudo wget -O $HOME/opt/dcdn/pop "https://dl.pipecdn.app/\$LATEST_VERSION/pop"
-    sudo chmod +x $HOME/opt/dcdn/pop
+    download_pop() {
+        while true; do
+            sudo wget -O \$HOME/opt/dcdn/pop "https://dl.pipecdn.app/\$LATEST_VERSION/pop"
+            if [ -s "\$HOME/opt/dcdn/pop" ]; then
+                break
+            else
+                echo "Downloaded file is empty, retrying..."
+            fi
+        done
+    }
+
+    download_pop
+
+    # Set executable permissions
+    sudo chmod +x \$HOME/opt/dcdn/pop
 
     # Update the symbolic link
-    sudo ln -s $HOME/opt/dcdn/pop /usr/local/bin/pop -f
+    sudo rm -f /usr/local/bin/pop
+    sudo ln -s \$HOME/opt/dcdn/pop /usr/local/bin/pop
 
     # Restart the service
     sudo systemctl start pop
