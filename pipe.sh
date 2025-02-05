@@ -35,8 +35,9 @@ RAM=8
 LATEST_VERSION=$(. <(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh))
 LOG_VERSION=$(journalctl -n 100 -u pop -o cat | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | tail -1)
 DEF_VERSION=0.2.2
+CURRENT_VERSION=$($HOME/opt/dcdn/pop --version | awk '{print $5}')
 echo -e "\e[33mLatest node version $LATEST_VERSION\e[0m"
-echo -e "\e[92mInstalled node version $LOG_VERSION\e[0m"
+echo -e "\e[92mInstalled node version $CURRENT_VERSION\e[0m"
 
 if systemctl is-active --quiet node_update.timer; then
     echo -e "\e[32mAuto Update Active\e[0m"
@@ -218,7 +219,7 @@ EOF
             backup_node_info
 
             # Get the current version of the program
-            CURRENT_VERSION=$($HOME/opt/dcdn/pop --version | awk '{print $5}')
+            #CURRENT_VERSION=$($HOME/opt/dcdn/pop --version | awk '{print $5}')
 
             # Print the current and latest version for verification
             echo "Current version: $CURRENT_VERSION"
