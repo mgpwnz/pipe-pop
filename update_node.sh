@@ -4,7 +4,7 @@
 LATEST_VERSION=$(. <(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh))
 LOG_VERSION=$(journalctl -n 100 -u pop -o cat | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | tail -1)
 # Get the current version of the program
-CURRENT_VERSION=$($HOME/opt/dcdn/pop --version | awk '{print $5}')
+CURRENT_VERSION=$($HOME/opt/dcdn/pop --version | awk '/[0-9]+\.[0-9]+\.[0-9]+/ {for(i=1;i<=NF;i++) if ($i ~ /^[0-9]+\.[0-9]+\.[0-9]+$/) print $i}')
 
 # Print the current and latest version for verification
 echo "Current version: $CURRENT_VERSION"
