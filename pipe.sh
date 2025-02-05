@@ -296,7 +296,7 @@ EOF
 Description=Run Node Update Script Daily
 
 [Timer]
-OnBootSec=60min
+OnBootSec=5min
 OnUnitActiveSec=1d
 Unit=node_update.service
 
