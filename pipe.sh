@@ -171,7 +171,13 @@ else
 echo -e "\e[92mInstall\e[0m"
 fi
 }
-
+pre_update() {
+    if [ ! -f "$HOME/opt/dcdn/pop" ]; then
+echo -e "\e[31mNode is not installed\e[0m"
+echo -e "\e[31mRun Install\e[0m"
+exit 1
+fi
+}
 # Menu
 PS3='Select an action: '
 options=("Install" "Update" "Logs" "Change System Requirements" "Status" "AutoUpdate" "Rem. AutoUpdate" "Ref" "Uninstall" "Exit")
@@ -230,6 +236,7 @@ EOF
 
         "Update")
             cd $HOME
+            pre_update
             backup_node_info
 
             # Get the current version of the program
