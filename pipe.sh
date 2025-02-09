@@ -35,7 +35,12 @@ RAM=8
 LATEST_VERSION=$(. <(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh))
 LOG_VERSION=$(journalctl -n 100 -u pop -o cat | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | tail -1)
 DEF_VERSION=0.2.2
+if [  -d "$HOME/opt/dcdn/pop" ]; then
 CURRENT_VERSION=$($HOME/opt/dcdn/pop --version | awk '/[0-9]+\.[0-9]+\.[0-9]+/ {for(i=1;i<=NF;i++) if ($i ~ /^[0-9]+\.[0-9]+\.[0-9]+$/) print $i}')
+else
+CURRENT_VERSION=$(echo "Not installed")
+fi
+
 echo -e "\e[33mLatest node version $LATEST_VERSION\e[0m"
 echo -e "\e[92mInstalled node version $CURRENT_VERSION\e[0m"
 
