@@ -163,7 +163,14 @@ download_pop() {
         exit 1
     fi
 }
-
+find_prev_install() {
+    if [  -f "$HOME/opt/dcdn/pop" ]; then
+echo -e "\e[31mNode is already installed\e[0m"
+exit 1
+else
+echo -e "\e[92mInstall\e[0m"
+fi
+}
 
 # Menu
 PS3='Select an action: '
@@ -173,6 +180,7 @@ select opt in "${options[@]}"; do
     case $opt in
         "Install")
             cd $HOME
+            find_prev_install
             port_check
             echo "Find latest node version $LATEST_VERSION"
             echo "Select version option:"
