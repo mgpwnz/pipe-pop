@@ -173,7 +173,7 @@ fi
 }
 pre_update() {
     if [ ! -f "$HOME/opt/dcdn/pop" ]; then
-echo -e "\e[31mNode is not installed\e[0m"
+echo -e "\e[31mNode is not installed!\e[0m"
 echo -e "\e[31mRun Install\e[0m"
 exit 1
 fi
@@ -277,6 +277,7 @@ EOF
             ;;
 
         "Logs")
+            pre_update
             journalctl -n 100 -f -u pop -o cat
             break
             ;;
@@ -371,10 +372,7 @@ EOF
             ;;
 
         "Uninstall")
-            if [ ! -d "$HOME/opt/dcdn" ]; then
-                echo "No installation found."
-                break
-            fi
+            pre_update
 
             read -r -p "Wipe all DATA? [y/N] " response
             case "$response" in
