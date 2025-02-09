@@ -283,6 +283,7 @@ EOF
 
         "AutoUpdate")
         # Check if the update script exists
+        pre_update
         if [ ! -f "$HOME/opt/dcdn/update_node.sh" ]; then
         echo "File $HOME/opt/dcdn/update_node.sh does not exist. Creating the update script..."
         backup_node_info
@@ -339,18 +340,21 @@ EOF
             ;;
 
         "Ref")
+            pre_update
             cd $HOME/opt/dcdn/ && ./pop --gen-referral-route
             cd $HOME
             break
             ;;
 
         "Status")
+            pre_update
             cd $HOME/opt/dcdn/ && ./pop --status
             cd $HOME
             break
             ;;
         
         "Сhange System Requirements")
+            pre_update
             echo "Change System Requirements"
             echo "Enter RAM: "
             read NEW_RAM
