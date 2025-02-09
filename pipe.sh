@@ -38,7 +38,7 @@ DEF_VERSION=0.2.2
 if [  -d "$HOME/opt/dcdn/pop" ]; then
 CURRENT_VERSION=$($HOME/opt/dcdn/pop --version | awk '/[0-9]+\.[0-9]+\.[0-9]+/ {for(i=1;i<=NF;i++) if ($i ~ /^[0-9]+\.[0-9]+\.[0-9]+$/) print $i}')
 else
-CURRENT_VERSION=$(echo "Not installed")
+CURRENT_VERSION=$(echo -e "\e[31m no find\e[0m")
 fi
 
 echo -e "\e[33mLatest node version $LATEST_VERSION\e[0m"
