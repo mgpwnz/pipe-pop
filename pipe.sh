@@ -182,6 +182,8 @@ select opt in "${options[@]}"; do
             cd $HOME
             find_prev_install
             port_check
+            echo "Enter Solana wallet: "
+            read PUB_KEY
             echo "Find latest node version $LATEST_VERSION"
             echo "Select version option:"
             echo "1) Use default version ($DEF_VERSION)"
@@ -197,8 +199,6 @@ select opt in "${options[@]}"; do
                 sudo ln -s "$HOME/opt/dcdn/pop" /usr/local/bin/pop
             fi
 
-            echo "Enter Solana wallet: "
-            read PUB_KEY
             restore_backup
 
             sudo tee /etc/systemd/system/pop.service > /dev/null << EOF
