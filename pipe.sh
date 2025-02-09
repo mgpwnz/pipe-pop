@@ -353,7 +353,7 @@ EOF
             break
             ;;
         
-        "Сhange System Requirements")
+        "Change System Requirements")
             pre_update
             echo "Change System Requirements"
             echo "Enter RAM: "
