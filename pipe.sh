@@ -40,7 +40,7 @@ CURRENT_VERSION=$($HOME/opt/dcdn/pop --version 2>/dev/null | awk '/[0-9]+\.[0-9]
 
 echo -e "\e[33mLatest node version $LATEST_VERSION\e[0m"
 if [ ! -f "$HOME/opt/dcdn/pop" ]; then
-echo -e "\e[31mNode not installed\e[0m"
+echo -e "\e[31mNode is not installed!\e[0m"
 else
 echo -e "\e[92mInstalled node version $CURRENT_VERSION\e[0m"
 fi
