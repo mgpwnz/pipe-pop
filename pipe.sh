@@ -180,7 +180,7 @@ fi
 }
 # Menu
 PS3='Select an action: '
-options=("Install" "Update" "Logs" "Change System Requirements" "Status" "AutoUpdate" "Rem. AutoUpdate" "Ref" "Uninstall" "Exit")
+options=("Install" "Update" "Logs" "Change System Requirements" "Status" "AutoUpdate" "Rem. AutoUpdate" "Ref" "Points" "Uninstall" "Exit")
 
 select opt in "${options[@]}"; do
     case $opt in
@@ -346,7 +346,12 @@ EOF
             cd $HOME
             break
             ;;
-
+        "Points")
+            pre_update
+            cd $HOME/opt/dcdn/ && ./pop --points
+            cd $HOME
+            break
+            ;;
         "Status")
             pre_update
             cd $HOME/opt/dcdn/ && ./pop --status
