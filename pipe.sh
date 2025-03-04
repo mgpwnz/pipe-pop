@@ -94,7 +94,7 @@ if [[ -z "$LOG_VERSION" ]]; then
     read -p "Do you still want to update ports? (y/N): " choice
     case "$choice" in
         y|Y ) 
-            LOG_VERSION="CURRENT_VERSION"
+            LOG_VERSION="$CURRENT_VERSION"
             
             sed -i '/^ExecStart=/ {/--enable-80-443/! s/$/ --enable-80-443/}' /etc/systemd/system/pop.service
             systemctl daemon-reload
