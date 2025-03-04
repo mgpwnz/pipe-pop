@@ -87,7 +87,28 @@ delete_autoupdate(){
         echo "Auto-update has been removed."
     fi
 }
-
+add_ports() {
+if [[ -z "$LOG_VERSION" ]]; then
+    echo "This last version."
+    
+    read -p "Do you still want to update ports? (y/N): " choice
+    case "$choice" in
+        y|Y ) 
+            LOG_VERSION="CURRENT_VERSION"
+            
+            sed -i '/^ExecStart=/ {/--enable-80-443/! s/$/ --enable-80-443/}' /etc/systemd/system/pop.service
+            systemctl daemon-reload
+            systemctl restart pop.service
+            
+            echo "Port updated and service restarted."
+            ;;
+        * ) 
+            echo "Update canceled."
+            exit 0
+            ;;
+    esac
+fi
+}
 port_check() {
     local PORT=8003
     if sudo lsof -i :$PORT >/dev/null 2>&1; then
@@ -214,7 +235,7 @@ After=network.target
 Wants=network-online.target
 
 [Service]
-ExecStart=$HOME/opt/dcdn/pop --ram $RAM --pubKey $PUB_KEY --max-disk $DISK --cache-dir $HOME/opt/dcdn/download_cache
+ExecStart=$HOME/opt/dcdn/pop --ram $RAM --pubKey $PUB_KEY --max-disk $DISK --cache-dir $HOME/opt/dcdn/download_cache --enable-80-443
 Restart=always
 RestartSec=5
 LimitNOFILE=65536
@@ -238,7 +259,7 @@ EOF
             cd $HOME
             pre_update
             backup_node_info
-
+            add_ports
             # Get the current version of the program
             #CURRENT_VERSION=$($HOME/opt/dcdn/pop --version | awk '{print $5}')
 
