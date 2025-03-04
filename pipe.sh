@@ -89,25 +89,24 @@ delete_autoupdate(){
 }
 add_ports() {
 if [[ -z "$LOG_VERSION" ]]; then
-    echo "This last version."
-    
-    read -p "Do you still want to update ports? (y/N): " choice
-    case "$choice" in
-        y|Y ) 
-            
-            sed -i '/^ExecStart=/ {/--enable-80-443/! s/$/ --enable-80-443/}' /etc/systemd/system/pop.service
-            systemctl daemon-reload
-            systemctl restart pop.service
-            
-            echo "Port updated and service restarted."
-            break
-            ;;
-        * ) 
-            echo "Update canceled."
-            exit 0
-            ;;
-    esac
-fi
+        echo "This last version."
+
+        read -p "Do you still want to update ports? (y/N): " choice
+        case "$choice" in
+            y|Y ) 
+                sed -i '/^ExecStart=/ {/--enable-80-443/! s/$/ --enable-80-443/}' /etc/systemd/system/pop.service
+                systemctl daemon-reload
+                systemctl restart pop.service
+
+                echo "Port updated and service restarted."
+                return 0  
+                ;;
+            * ) 
+                echo "Update canceled."
+                exit 0
+                ;;
+        esac
+    fi
 }
 port_check() {
     local PORT=8003
@@ -261,7 +260,7 @@ EOF
             backup_node_info
             add_ports
             if [[ -z "$LOG_VERSION" ]]; then
-            break
+            exit 0
             fi
             # Get the current version of the program
             #CURRENT_VERSION=$($HOME/opt/dcdn/pop --version | awk '{print $5}')
