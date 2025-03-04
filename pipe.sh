@@ -95,6 +95,8 @@ if [[ -z "$LOG_VERSION" ]]; then
         case "$choice" in
             y|Y ) 
                 sed -i '/^ExecStart=/ {/--enable-80-443/! s/$/ --enable-80-443/}' /etc/systemd/system/pop.service
+                cd $HOME/opt/dcdn && ./pop --refresh
+                cd $HOME
                 systemctl daemon-reload
                 systemctl restart pop.service
 
