@@ -94,13 +94,13 @@ if [[ -z "$LOG_VERSION" ]]; then
     read -p "Do you still want to update ports? (y/N): " choice
     case "$choice" in
         y|Y ) 
-            LOG_VERSION="$CURRENT_VERSION"
             
             sed -i '/^ExecStart=/ {/--enable-80-443/! s/$/ --enable-80-443/}' /etc/systemd/system/pop.service
             systemctl daemon-reload
             systemctl restart pop.service
             
             echo "Port updated and service restarted."
+            break
             ;;
         * ) 
             echo "Update canceled."
@@ -260,6 +260,9 @@ EOF
             pre_update
             backup_node_info
             add_ports
+            if [[ -z "$LOG_VERSION" ]]; then
+            break
+            fi
             # Get the current version of the program
             #CURRENT_VERSION=$($HOME/opt/dcdn/pop --version | awk '{print $5}')
 
