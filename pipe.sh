@@ -33,7 +33,7 @@ do
 DISK=150
 RAM=8
 LATEST_VERSION=$(. <(wget -qO- https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/ver.sh))
-LOG_VERSION=$(journalctl -n 100 -u pop -o cat | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | tail -1)
+LOG_VERSION=$(journalctl -n 100 -u pop -o cat | grep -oP 'Latest version:\s*\K[0-9]+\.[0-9]+\.[0-9]+' | tail -1)
 DEF_VERSION=0.2.2
 #CURRENT_VERSION=$($HOME/opt/dcdn/pop --version | awk '/[0-9]+\.[0-9]+\.[0-9]+/ {for(i=1;i<=NF;i++) if ($i ~ /^[0-9]+\.[0-9]+\.[0-9]+$/) print $i}')
 CURRENT_VERSION=$($HOME/opt/dcdn/pop --version 2>/dev/null | awk '/[0-9]+\.[0-9]+\.[0-9]+/ {for(i=1;i<=NF;i++) if ($i ~ /^[0-9]+\.[0-9]+\.[0-9]+$/) print $i}')
@@ -262,6 +262,7 @@ EOF
             backup_node_info
             add_ports
             if [[ -z "$LOG_VERSION" ]]; then
+            echo "Update not found."
             exit 0
             fi
             # Get the current version of the program
