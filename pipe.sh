@@ -193,6 +193,34 @@ download_pop() {
         exit 1
     fi
 }
+tg_bot() {
+    ENV_PATH="$HOME/opt/dcdn/.env"
+    mkdir -p "$HOME/opt/dcdn"
+
+    if [ ! -f "$ENV_PATH" ]; then
+        echo "Do you want to enable Telegram notifications? [y/n]"
+        read -r use_telegram
+
+        if [[ "$use_telegram" =~ ^[Yy]$ ]]; then
+            echo "Enter Telegram Bot Token:"
+            read TELEGRAM_TOKEN
+
+            echo "Enter Telegram Chat ID:"
+            read TELEGRAM_CHAT_ID
+
+            echo "TELEGRAM_TOKEN=\"$TELEGRAM_TOKEN\"" > "$ENV_PATH"
+            echo "TELEGRAM_CHAT_ID=\"$TELEGRAM_CHAT_ID\"" >> "$ENV_PATH"
+            echo ".env file created with Telegram settings."
+        else
+            echo "TELEGRAM_TOKEN=\"\"" > "$ENV_PATH"
+            echo "TELEGRAM_CHAT_ID=\"\"" >> "$ENV_PATH"
+            echo ".env file created without Telegram settings."
+        fi
+    else
+        echo ".env already exists. Skipping Telegram setup."
+    fi
+}
+
 find_prev_install() {
     if [  -f "$HOME/opt/dcdn/pop" ]; then
 echo -e "\e[31mNode is already installed\e[0m"
@@ -322,7 +350,7 @@ EOF
         if [ ! -f "$HOME/opt/dcdn/update_node.sh" ]; then
         echo "File $HOME/opt/dcdn/update_node.sh does not exist. Creating the update script..."
         backup_node_info
-
+        tg_bot
         # Download the update script
         wget -O $HOME/opt/dcdn/update_node.sh https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/update_node.sh
         sudo chmod +x $HOME/opt/dcdn/update_node.sh
