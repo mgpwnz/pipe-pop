@@ -194,8 +194,8 @@ download_pop() {
     fi
 }
 tg_bot() {
-    ENV_PATH="$HOME/opt/dcdn/.env"
-    mkdir -p "$HOME/opt/dcdn"
+    ENV_PATH="$HOME/pipe_backup/.env"
+    mkdir -p "$HOME/pipe_backup"
 
     if [ ! -f "$ENV_PATH" ]; then
         echo "Do you want to enable Telegram notifications? [y/n]"
