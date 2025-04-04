@@ -6,18 +6,23 @@ TARGET_PATH="$HOME/opt/dcdn/pop"
 
 # Function to check for updates in logs
 check_for_update() {
-    local log_output
-    log_output=$(journalctl -u "$SERVICE_NAME" -o cat --no-pager -n $LOG_LINES | grep -E "UPDATE AVAILABLE!")
+    local log_output version
+
+    # Перевіряємо, чи є повідомлення про оновлення
+    log_output=$(journalctl -u "$SERVICE_NAME" -o cat --no-pager -n $LOG_LINES | grep -F "UPDATE AVAILABLE!")
 
     if [[ -n "$log_output" ]]; then
-        # Extract the download URL dynamically
-        local new_version_url
-        new_version_url=$(journalctl -u "$SERVICE_NAME" -o cat --no-pager -n $LOG_LINES | grep -Eo "https://dl\.pipecdn\.app/v[0-9]+\.[0-9]+\.[0-9]+/pop")
+        # Витягуємо версію з рядка Latest version:
+        version=$(journalctl -u "$SERVICE_NAME" -o cat --no-pager -n $LOG_LINES | grep -oP 'Latest version:\s*\K[0-9]+\.[0-9]+\.[0-9]+' | tail -1)
 
-        if [[ -n "$new_version_url" ]]; then
-            echo "New update detected: $new_version_url"
-            update_pop "$new_version_url"
+        if [[ -z "$version" ]]; then
+            echo "Не вдалося визначити версію оновлення."
+            exit 0
         fi
+
+        local new_version_url="https://dl.pipecdn.app/v$version/pop"
+        echo "New update detected: $new_version_url"
+        update_pop "$new_version_url"
     fi
 }
 
