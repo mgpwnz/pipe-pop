@@ -88,36 +88,44 @@ delete_autoupdate(){
     fi
 }
 add_ports() {
-if [[ -z "$LOG_VERSION" ]]; then
-        echo "This last version."
+    # Check if the version is empty — meaning no update is available
+    if [[ -z "$LOG_VERSION" ]]; then
+        echo "Checking port configuration..."
 
-        read -p "Do you still want to update ports? (y/N): " choice
-        case "$choice" in
-            y|Y ) 
-                sed -i '/^ExecStart=/ {/--enable-80-443/! s/$/ --enable-80-443/}' /etc/systemd/system/pop.service
-                cd $HOME/opt/dcdn && ./pop --refresh
-                cd $HOME
-                systemctl daemon-reload
-                systemctl restart pop.service
+        # If the port flag is already present — do nothing
+        if grep -qE '^ExecStart=.*--enable-80-443' /etc/systemd/system/pop.service; then
+            echo "Port parameters already enabled. No changes needed."
+        else
+            echo "Port parameters not found. Applying update..."
 
-                echo "Port updated and service restarted."
-                return 0  
-                ;;
-            * ) 
-                echo "Update canceled."
-                exit 0
-                ;;
-        esac
+            # Add the port flag only if it's not already present
+            sed -i '/^ExecStart=/ {/--enable-80-443/! s/$/ --enable-80-443/}' /etc/systemd/system/pop.service
+
+            # Refresh configuration
+            cd "$HOME/opt/dcdn" && ./pop --refresh
+            cd "$HOME"
+
+            # Reload systemd and restart the service
+            systemctl daemon-reload
+            systemctl restart pop.service
+
+            echo "Port parameters added and service restarted."
+        fi
     fi
 }
+
 port_check() {
-    local PORT=8003
-    if sudo lsof -i :$PORT >/dev/null 2>&1; then
-        echo "Error: Port $PORT is in use. Stopping installation."
-        exit 1
-    else
-        echo "Port $PORT is free. Continuing installation."
-    fi
+    # List of ports to check
+    local PORTS=(8003 443 80)
+
+    for PORT in "${PORTS[@]}"; do
+        if sudo lsof -i :$PORT >/dev/null 2>&1; then
+            echo "Error: Port $PORT is in use. Stopping installation."
+            exit 1
+        else
+            echo "Port $PORT is free. Continuing..."
+        fi
+    done
 }
 
 restore_backup(){
