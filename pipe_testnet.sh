@@ -84,6 +84,7 @@ else
   echo -e "\nConfiguring POP Cache Node..."
   read -p "Enter POP name: " POP_NAME
   read -p "Enter POP location (City, Country): " POP_LOCATION
+  read -p "Enter invite code: " INVITE_CODE
 
   # Server settings (defaults)
   DEFAULT_HOST="0.0.0.0"
@@ -117,6 +118,7 @@ else
   cat > "$ENV_FILE" <<EOL
 POP_NAME="$POP_NAME"
 POP_LOCATION="$POP_LOCATION"
+INVITE_CODE="$INVITE_CODE"
 SERVER_HOST="$SERVER_HOST"
 SERVER_PORT="$SERVER_PORT"
 HTTP_PORT="$HTTP_PORT"
@@ -141,6 +143,7 @@ cat > "$CONFIG_FILE" <<EOL
 {
   "pop_name": "$POP_NAME",
   "pop_location": "$POP_LOCATION",
+  "invite_code": "$INVITE_CODE",
   "server": {
     "host": "$SERVER_HOST",
     "port": $SERVER_PORT,
