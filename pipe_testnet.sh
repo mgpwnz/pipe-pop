@@ -196,7 +196,7 @@ Type=simple
 User=popcache
 Group=popcache
 WorkingDirectory=$CONFIG_DIR
-ExecStart=$BINARY_PATH
+ExecStart="$(command -v authbind) --deep $BINARY_PATH"
 Restart=always
 RestartSec=5
 LimitNOFILE=65535
@@ -208,12 +208,12 @@ Environment=POP_CONFIG_PATH=$CONFIG_JSON
 [Install]
 WantedBy=multi-user.target
 EOL
+# Reload systemd and enable service
 systemctl daemon-reload
-enable_cmd=$(systemctl is-enabled popcache || echo "systemctl enable popcache")
-$enable_cmd
+systemctl enable popcache
 systemctl restart popcache
 
-# 11. Log rotation
+# 11. Log rotation Log rotation
 echo_header "Setting up logrotate"
 cat > "$LOGROTATE_CONF" <<EOL
 $LOG_DIR/*.log {
