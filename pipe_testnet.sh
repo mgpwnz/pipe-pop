@@ -37,7 +37,7 @@ fi
 # 2. Install dependencies
 echo "Installing required packages..."
 apt update -y
-apt install -y libssl-dev ca-certificates curl jq tar
+apt install -y libssl-dev ca-certificates curl jq tar libcap2-bin
 
 # 3. Optimize system network settings
 cat > "$SYSCTL_CONF" <<EOL
@@ -72,6 +72,11 @@ echo "Downloading POP Cache node tarball..."
 curl -L "$BINARY_TAR_URL" -o "/tmp/$BINARY_TAR_NAME"
 echo "Extracting binary to $CONFIG_DIR..."
 tar -xzf "/tmp/$BINARY_TAR_NAME" -C "$CONFIG_DIR"
+
+# 6a. Grant binding to low ports
+echo "Setting capabilities to bind to low ports..."
+setcap 'cap_net_bind_service=+ep' "$BINARY_PATH"
+
 chmod +x "$BINARY_PATH"
 chown popcache:popcache "$BINARY_PATH"
 rm "/tmp/$BINARY_TAR_NAME"
@@ -200,9 +205,8 @@ EOL
 
 # Reload and enable service
 systemctl daemon-reload
-timeout=0
 systemctl enable popcache
-systemctl start popcache
+systemctl restart popcache
 
 # 10. Configure log rotation
 cat > "$LOGROTATE_CONF" <<EOL
