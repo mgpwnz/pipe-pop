@@ -2,49 +2,49 @@
 set -euo pipefail
 
 # -------------------------------------------------------------
-# POP Cache Node Setup & Update Script with Capabilities Debug
+# POP Cache Node Setup & Update Script
+# Automates installation, optimization, configuration,
+# and management of the POP Cache Node on Linux.
 # -------------------------------------------------------------
 
-# Variables
+# Configuration paths
 CONFIG_DIR="/opt/popcache"
-BINARY_TAR_URL="https://download.pipe.network/static/pop-v0.3.0-linux-x64.tar.gz"
-BINARY_TAR_NAME="pop-v0.3.0-linux-x64.tar.gz"
-BINARY_PATH="$CONFIG_DIR/pop"
+LOG_DIR="$CONFIG_DIR/logs"
+CONFIG_JSON="$CONFIG_DIR/config.json"
+ENV_FILE="$CONFIG_DIR/.env.pop"
+
+# System files
 SYSCTL_CONF="/etc/sysctl.d/99-popcache.conf"
 LIMITS_CONF="/etc/security/limits.d/popcache.conf"
 SERVICE_FILE="/etc/systemd/system/popcache.service"
-LOG_DIR="$CONFIG_DIR/logs"
 LOGROTATE_CONF="/etc/logrotate.d/popcache"
-ENV_FILE="$CONFIG_DIR/.env.pop"
 
-# Function to print header
-echo_header() {
-  echo -e "\n===== $1 ====="
-}
+# Binary download
+BINARY_TAR_URL="https://download.pipe.network/static/pop-v0.3.0-linux-x64.tar.gz"
+BINARY_TAR="/tmp/pop-v0.3.0-linux-x64.tar.gz"
+BINARY_PATH="$CONFIG_DIR/pop"
 
-# Ensure running as root
+# Helper for section headers
+echo_header() { echo -e "\n===== $1 ====="; }
+
+# Ensure script run as root
 if [[ $EUID -ne 0 ]]; then
-  echo "This script must be run as root. Exiting."
+  echo "Please run as root." >&2
   exit 1
 fi
 
 # 1. Install dependencies
-echo_header "Installing packages"
+echo_header "Installing dependencies"
 apt update -y
-apt install -y libssl-dev ca-certificates curl jq tar libcap2-bin
+apt install -y libssl-dev ca-certificates curl jq tar libcap2-bin authbind
 
-# 2. Create dedicated user
-echo_header "Ensuring 'popcache' user exists"
-if ! id popcache &>/dev/null; then
-  useradd -m -s /bin/bash popcache
-  usermod -aG sudo popcache
-  echo "User 'popcache' created."
-else
-  echo "User 'popcache' already exists."
-fi
+# 2. Create user
+echo_header "Creating 'popcache' user"
+id popcache &>/dev/null || useradd -m -s /bin/bash popcache
+echo "User 'popcache' ready."
 
-# 3. Optimize network settings
-echo_header "Applying sysctl network optimizations"
+# 3. Kernel tuning
+echo_header "Applying sysctl optimizations"
 cat > "$SYSCTL_CONF" <<EOL
 net.ipv4.ip_local_port_range = 1024 65535
 net.core.somaxconn = 65535
@@ -60,55 +60,52 @@ EOL
 sysctl -p "$SYSCTL_CONF"
 
 # 4. Increase file limits
-echo_header "Setting file limits"
+echo_header "Configuring file limits"
 cat > "$LIMITS_CONF" <<EOL
 *    soft nofile 65535
 *    hard nofile 65535
 EOL
 
 # 5. Prepare directories
-echo_header "Creating directories"
+echo_header "Preparing directories"
 mkdir -p "$CONFIG_DIR" "$LOG_DIR"
 chown -R popcache:popcache "$CONFIG_DIR"
 
-# 6. Download & extract binary
-echo_header "Downloading & extracting POP binary"
-curl -sSL "$BINARY_TAR_URL" -o "/tmp/$BINARY_TAR_NAME"
-temp_dir=$(mktemp -d)
-tar -xzf "/tmp/$BINARY_TAR_NAME" -C "$temp_dir"
-BINARY_SRC=$(find "$temp_dir" -type f -name pop -print -quit)
+# 6. Download and extract binary
+echo_header "Downloading and extracting binary"
+curl -sSL "$BINARY_TAR_URL" -o "$BINARY_TAR"
+rm -rf "/tmp/pop-temp"
+mkdir -p "/tmp/pop-temp"
+tar -xzf "$BINARY_TAR" -C "/tmp/pop-temp"
+# Locate 'pop' binary
+BINARY_SRC=$(find "/tmp/pop-temp" -type f -name pop -print -quit)
 if [[ -z "$BINARY_SRC" ]]; then
-  echo "Error: 'pop' binary not found in archive" >&2
-  rm -rf "$temp_dir" "/tmp/$BINARY_TAR_NAME"
+  echo "Error: 'pop' binary not found" >&2
   exit 1
 fi
 mv "$BINARY_SRC" "$BINARY_PATH"
-rm -rf "$temp_dir" "/tmp/$BINARY_TAR_NAME"
-
-# 7. Set permissions & capabilities
-echo_header "Setting permissions & capabilities"
+rm -rf "/tmp/pop-temp" "$BINARY_TAR"
 chmod +x "$BINARY_PATH"
-# Debug before
-echo "Capabilities before setcap:"
-getcap "$BINARY_PATH" || echo "  none"
-# Apply
-if setcap 'cap_net_bind_service=+ep' "$BINARY_PATH"; then
-  echo "setcap applied successfully"
-else
-  echo "Warning: setcap failed. Ensure libcap2-bin is installed and filesystem supports capabilities." >&2
-fi
-# Debug after
-echo "Capabilities after setcap:"
-getcap "$BINARY_PATH" || echo "  none"
 chown popcache:popcache "$BINARY_PATH"
 
-# 8. Load or gather configuration
-echo_header "Loading configuration"
+# 7. Enable low-port binding
+echo_header "Setting binding capabilities"
+if setcap 'cap_net_bind_service=+ep' "$BINARY_PATH"; then
+  echo "setcap succeeded"
+else
+  echo "setcap failed, configuring authbind" >&2
+  touch "/etc/authbind/byport/443"
+  chown popcache "/etc/authbind/byport/443"
+  chmod 500 "/etc/authbind/byport/443"
+fi
+
+# 8. Load or prompt configuration
+echo_header "Loading or creating .env.pop"
 if [[ -f "$ENV_FILE" ]]; then
   source "$ENV_FILE"
-  echo "Loaded config from $ENV_FILE"
+  echo "Loaded existing configuration."
 else
-  echo "First run: please enter configuration values"
+  echo "Enter POP Cache Node configuration:";
   read -p "POP name: " POP_NAME
   read -p "POP location (City, Country): " POP_LOCATION
   read -p "Invite code: " INVITE_CODE
@@ -126,7 +123,6 @@ else
   read -p "Discord: " OP_DISCORD
   read -p "Telegram: " OP_TELEGRAM
   read -p "Solana pubkey: " SOLANA_PUBKEY
-
   cat > "$ENV_FILE" <<EOL
 POP_NAME="$POP_NAME"
 POP_LOCATION="$POP_LOCATION"
@@ -146,14 +142,14 @@ OP_DISCORD="$OP_DISCORD"
 OP_TELEGRAM="$OP_TELEGRAM"
 SOLANA_PUBKEY="$SOLANA_PUBKEY"
 EOL
-  chmod 600 "$ENV_FILE" && chown popcache:popcache "$ENV_FILE"
-  echo "Configuration saved to $ENV_FILE"
+  chmod 600 "$ENV_FILE"; chown popcache:popcache "$ENV_FILE"
   source "$ENV_FILE"
+  echo "Configuration saved to $ENV_FILE"
 fi
 
-# 9. Write config.json
+# 9. Generate config.json
 echo_header "Writing config.json"
-cat > "$CONFIG_DIR/config.json" <<EOL
+cat > "$CONFIG_JSON" <<EOL
 {
   "pop_name": "$POP_NAME",
   "pop_location": "$POP_LOCATION",
@@ -187,7 +183,7 @@ cat > "$CONFIG_DIR/config.json" <<EOL
   }
 }
 EOL
-chown popcache:popcache "$CONFIG_DIR/config.json"
+chown popcache:popcache "$CONFIG_JSON"
 
 # 10. Systemd service setup
 echo_header "Configuring systemd service"
@@ -195,7 +191,6 @@ cat > "$SERVICE_FILE" <<EOL
 [Unit]
 Description=POP Cache Node
 After=network.target
-
 [Service]
 Type=simple
 User=popcache
@@ -205,43 +200,43 @@ ExecStart=$BINARY_PATH
 Restart=always
 RestartSec=5
 LimitNOFILE=65535
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 StandardOutput=append:$LOG_DIR/stdout.log
 StandardError=append:$LOG_DIR/stderr.log
-Environment=POP_CONFIG_PATH=$CONFIG_DIR/config.json
-
+Environment=POP_CONFIG_PATH=$CONFIG_JSON
 [Install]
 WantedBy=multi-user.target
 EOL
 systemctl daemon-reload
-systemctl enable popcache
+enable_cmd=$(systemctl is-enabled popcache || echo "systemctl enable popcache")
+$enable_cmd
 systemctl restart popcache
 
 # 11. Log rotation
-echo_header "Setting up log rotation"
+echo_header "Setting up logrotate"
 cat > "$LOGROTATE_CONF" <<EOL
 $LOG_DIR/*.log {
-    daily
-    missingok
-    rotate 14
-    compress
-    delaycompress
-    notifempty
-    create 0640 popcache popcache
-    sharedscripts
-    postrotate
-        systemctl reload popcache >/dev/null 2>&1 || true
-    endscript
+  daily
+  missingok
+  rotate 14
+  compress
+  delaycompress
+  notifempty
+  create 0640 popcache popcache
+  sharedscripts
+  postrotate
+    systemctl reload popcache >/dev/null 2>&1 || true
+  endscript
 }
 EOL
 
 # 12. Firewall rules
-echo_header "Applying firewall rules"
+echo_header "Configuring firewall"
 if command -v ufw &>/dev/null; then
   ufw allow "$SERVER_PORT/tcp"
   ufw allow "$HTTP_PORT/tcp"
-  echo "Rules added for $SERVER_PORT and $HTTP_PORT"
 fi
 
-# Done
-echo_header "POP Cache Node installation/update complete"
-echo "Run 'sudo systemctl status popcache' to verify service status."
+echo_header "Installation/update complete"
+echo "Check service status: sudo systemctl status popcache"
