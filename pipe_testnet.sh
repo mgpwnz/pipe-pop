@@ -35,8 +35,12 @@ fi
 
 # 1. Install dependencies
 echo_header "Installing dependencies"
-apt update -y
-apt install -y libssl-dev ca-certificates curl jq tar libcap2-bin authbind
+apk_cmd="apt"
+if ! command -v apt &>/dev/null; then
+  apk_cmd="apk" # fallback if alpine
+fi
+$apk_cmd update -y || true
+$apk_cmd install -y libssl-dev ca-certificates curl jq tar libcap2-bin authbind
 
 # 2. Create user
 echo_header "Creating 'popcache' user"
@@ -74,17 +78,16 @@ chown -R popcache:popcache "$CONFIG_DIR"
 # 6. Download and extract binary
 echo_header "Downloading and extracting binary"
 curl -sSL "$BINARY_TAR_URL" -o "$BINARY_TAR"
-rm -rf "/tmp/pop-temp"
-mkdir -p "/tmp/pop-temp"
-tar -xzf "$BINARY_TAR" -C "/tmp/pop-temp"
-# Locate 'pop' binary
-BINARY_SRC=$(find "/tmp/pop-temp" -type f -name pop -print -quit)
+temp_dir=$(mktemp -d)
+tar -xzf "$BINARY_TAR" -C "$temp_dir"
+BINARY_SRC=$(find "$temp_dir" -type f -name pop -print -quit)
 if [[ -z "$BINARY_SRC" ]]; then
   echo "Error: 'pop' binary not found" >&2
+  rm -rf "$temp_dir" "$BINARY_TAR"
   exit 1
 fi
 mv "$BINARY_SRC" "$BINARY_PATH"
-rm -rf "/tmp/pop-temp" "$BINARY_TAR"
+rm -rf "$temp_dir" "$BINARY_TAR"
 chmod +x "$BINARY_PATH"
 chown popcache:popcache "$BINARY_PATH"
 
@@ -94,9 +97,10 @@ if setcap 'cap_net_bind_service=+ep' "$BINARY_PATH"; then
   echo "setcap succeeded"
 else
   echo "setcap failed, configuring authbind" >&2
-  touch "/etc/authbind/byport/443"
-  chown popcache "/etc/authbind/byport/443"
-  chmod 500 "/etc/authbind/byport/443"
+  mkdir -p /etc/authbind/byport
+  touch /etc/authbind/byport/443
+  chown popcache /etc/authbind/byport/443
+  chmod 500 /etc/authbind/byport/443
 fi
 
 # 8. Load or prompt configuration
@@ -154,33 +158,10 @@ cat > "$CONFIG_JSON" <<EOL
   "pop_name": "$POP_NAME",
   "pop_location": "$POP_LOCATION",
   "invite_code": "$INVITE_CODE",
-  "server": {
-    "host": "$SERVER_HOST",
-    "port": $SERVER_PORT,
-    "http_port": $HTTP_PORT,
-    "workers": $WORKERS
-  },
-  "cache_config": {
-    "memory_cache_size_mb": $MEMORY_CACHE,
-    "disk_cache_path": "./cache",
-    "disk_cache_size_gb": $DISK_CACHE,
-    "default_ttl_seconds": 86400,
-    "respect_origin_headers": true,
-    "max_cacheable_size_mb": 1024
-  },
-  "api_endpoints": {
-    "base_url": "https://dataplane.pipenetwork.com"
-  },
-  "identity_config": {
-    "node_name": "$NODE_NAME",
-    "name": "$OP_NAME",
-    "email": "$OP_EMAIL",
-    "website": "$OP_WEBSITE",
-    "twitter": "$OP_TWITTER",
-    "discord": "$OP_DISCORD",
-    "telegram": "$OP_TELEGRAM",
-    "solana_pubkey": "$SOLANA_PUBKEY"
-  }
+  "server": { "host": "$SERVER_HOST", "port": $SERVER_PORT, "http_port": $HTTP_PORT, "workers": $WORKERS },
+  "cache_config": { "memory_cache_size_mb": $MEMORY_CACHE, "disk_cache_path": "./cache", "disk_cache_size_gb": $DISK_CACHE, "default_ttl_seconds": 86400, "respect_origin_headers": true, "max_cacheable_size_mb": 1024 },
+  "api_endpoints": { "base_url": "https://dataplane.pipenetwork.com" },
+  "identity_config": { "node_name": "$NODE_NAME", "name": "$OP_NAME", "email": "$OP_EMAIL", "website": "$OP_WEBSITE", "twitter": "$OP_TWITTER", "discord": "$OP_DISCORD", "telegram": "$OP_TELEGRAM", "solana_pubkey": "$SOLANA_PUBKEY" }
 }
 EOL
 chown popcache:popcache "$CONFIG_JSON"
@@ -191,29 +172,31 @@ cat > "$SERVICE_FILE" <<EOL
 [Unit]
 Description=POP Cache Node
 After=network.target
+
 [Service]
 Type=simple
 User=popcache
 Group=popcache
 WorkingDirectory=$CONFIG_DIR
-ExecStart=/usr/bin/authbind --deep /opt/popcache/pop
+ExecStart=/usr/bin/authbind --deep $BINARY_PATH
 Restart=always
 RestartSec=5
 LimitNOFILE=65535
+# Ensure binding capabilities
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 StandardOutput=append:$LOG_DIR/stdout.log
 StandardError=append:$LOG_DIR/stderr.log
 Environment=POP_CONFIG_PATH=$CONFIG_JSON
+
 [Install]
 WantedBy=multi-user.target
 EOL
-# Reload systemd and enable service
 systemctl daemon-reload
 systemctl enable popcache
 systemctl restart popcache
 
-# 11. Log rotation Log rotation
+# 11. Log rotation
 echo_header "Setting up logrotate"
 cat > "$LOGROTATE_CONF" <<EOL
 $LOG_DIR/*.log {
