@@ -33,7 +33,31 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
-# 1. Install dependencies
+# 1. Check and build glibc 2.39 if necessary
+echo_header "Checking glibc version"
+CURRENT_GLIBC=$(ldd --version | head -n1 | awk '{print $NF}')
+REQUIRED_GLIBC="2.39"
+if printf '%s
+%s' "$REQUIRED_GLIBC" "$CURRENT_GLIBC" | sort -V | head -n1 | grep -qx "$REQUIRED_GLIBC"; then
+  echo "glibc $CURRENT_GLIBC detected (>= $REQUIRED_GLIBC)"
+else
+  echo "Building glibc $REQUIRED_GLIBC (this may take 3-5 minutes)..."
+  mkdir -p /opt/glibc-build
+  cd /opt/glibc-build
+  if [[ ! -f glibc-2.39.tar.gz ]]; then
+    wget http://ftp.gnu.org/gnu/libc/glibc-2.39.tar.gz
+  fi
+  tar -xf glibc-2.39.tar.gz
+  mkdir -p glibc-2.39-build glibc-2.39-install
+  cd glibc-2.39-build
+  ../glibc-2.39/configure --prefix=/opt/glibc-build/glibc-2.39-install
+  make -j"$(nproc)"
+  make install
+  export LD_LIBRARY_PATH="/opt/glibc-build/glibc-2.39-install/lib:$LD_LIBRARY_PATH"
+  echo "glibc $REQUIRED_GLIBC built and installed to /opt/glibc-build/glibc-2.39-install"
+fi
+
+# 2. Install dependencies
 echo_header "Installing dependencies"
 apk_cmd="apt"
 if ! command -v apt &>/dev/null; then
