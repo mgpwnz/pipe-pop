@@ -1,3 +1,11 @@
 wget -q -O pipe_testnet.sh https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/pipe_testnet.sh && chmod +x pipe_testnet.sh && ./pipe_testnet.sh
 
 wget -q -O update_popcache.sh https://raw.githubusercontent.com/mgpwnz/pipe-pop/refs/heads/main/update_popcache.sh && chmod +x update_popcache.sh && ./update_popcache.sh
+
+
+
+sudo systemctl status popcache
+
+/opt/popcache/pop --version
+
+sudo journalctl -u popcache -n 50
